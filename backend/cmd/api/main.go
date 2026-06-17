@@ -13,11 +13,15 @@ import (
 	"team1blog/backend/internal/articles"
 	"team1blog/backend/internal/audit"
 	"team1blog/backend/internal/auth"
+	"team1blog/backend/internal/banners"
+	"team1blog/backend/internal/cloudinary"
 	"team1blog/backend/internal/config"
 	"team1blog/backend/internal/db"
 	"team1blog/backend/internal/email"
 	"team1blog/backend/internal/notifications"
 	"team1blog/backend/internal/profile"
+	"team1blog/backend/internal/reviews"
+	"team1blog/backend/internal/uploads"
 	"team1blog/backend/internal/users"
 )
 
@@ -53,6 +57,18 @@ func main() {
 	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, frontendAppURL(cfg))
 	articlesHandler := articles.NewHandler(articlesService)
 
+	uploader := cloudinary.NewUploader(cfg.CloudinaryCloudName, cfg.CloudinaryAPIKey, cfg.CloudinaryAPISecret, cfg.PublicAPIURL, cfg.MockImages, "uploads")
+
+	reviewsRepo := reviews.NewRepository(pool)
+	reviewsService := reviews.NewService(reviewsRepo, articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, frontendAppURL(cfg))
+	reviewsHandler := reviews.NewHandler(reviewsService, articlesService)
+
+	bannersRepo := banners.NewRepository(pool)
+	bannersService := banners.NewService(bannersRepo, articlesRepo, usersRepo, notificationsRepo, uploader, auditLogger, mailer, frontendAppURL(cfg))
+	bannersHandler := banners.NewHandler(bannersService, articlesService)
+
+	uploadsHandler := uploads.NewHandler(articlesRepo, uploader)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
@@ -72,11 +88,21 @@ func main() {
 		_, _ = w.Write([]byte("ok"))
 	})
 
+	// Serves files written by the mock (local-disk) Cloudinary uploader so
+	// banner/inline image URLs resolve to something real before Cloudinary
+	// credentials exist.
+	if cfg.MockImages {
+		r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+	}
+
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Mount("/auth", auth.Routes(authHandler, tokenIssuer))
 		api.Mount("/me", profile.Routes(profileHandler, tokenIssuer))
 		api.Mount("/notifications", notifications.Routes(notificationsHandler, tokenIssuer))
 		api.Mount("/articles", articles.Routes(articlesHandler, tokenIssuer))
+		api.Mount("/reviews", reviews.Routes(reviewsHandler, tokenIssuer))
+		api.Mount("/banners", banners.Routes(bannersHandler, tokenIssuer))
+		api.Mount("/uploads", uploads.Routes(uploadsHandler, tokenIssuer))
 	})
 
 	logIntegrationModes(cfg)
