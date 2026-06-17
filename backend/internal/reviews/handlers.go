@@ -47,22 +47,24 @@ func toSuggestionDTO(s *Suggestion) suggestionDTO {
 }
 
 type cycleDTO struct {
-	ID           uuid.UUID `json:"id"`
-	ArticleTitle string    `json:"articleTitle,omitempty"`
-	ReviewerName string    `json:"reviewerName"`
-	Decision     string    `json:"decision"`
-	Summary      string    `json:"summary"`
-	CreatedAt    string    `json:"createdAt"`
+	ID              uuid.UUID `json:"id"`
+	ArticleTitle    string    `json:"articleTitle,omitempty"`
+	ContributorName string    `json:"contributorName,omitempty"`
+	ReviewerName    string    `json:"reviewerName"`
+	Decision        string    `json:"decision"`
+	Summary         string    `json:"summary"`
+	CreatedAt       string    `json:"createdAt"`
 }
 
 func toCycleDTO(c *ReviewCycle) cycleDTO {
 	return cycleDTO{
-		ID:           c.ID,
-		ArticleTitle: c.ArticleTitle,
-		ReviewerName: c.ReviewerName,
-		Decision:     string(c.Decision),
-		Summary:      c.Summary,
-		CreatedAt:    c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:              c.ID,
+		ArticleTitle:    c.ArticleTitle,
+		ContributorName: c.ContributorName,
+		ReviewerName:    c.ReviewerName,
+		Decision:        string(c.Decision),
+		Summary:         c.Summary,
+		CreatedAt:       c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
