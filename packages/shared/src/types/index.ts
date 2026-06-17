@@ -90,9 +90,9 @@ export interface Payment {
   amountUsd: number;
   txHash: string | null;
   status: PaymentStatus;
-  initiatedBy: string | null;
   initiatedAt: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 }
 
 export interface Notification {
@@ -113,6 +113,81 @@ export interface SubstackArticle {
   url: string;
   publishedAt: string;
   syncedAt: string;
+}
+
+export interface SubstackPost {
+  id: string;
+  title: string;
+  url: string;
+  publishedAt: string;
+}
+
+export interface ContributorSummary {
+  id: string;
+  name: string;
+  email: string;
+  walletAddress: string | null;
+  status: "active" | "inactive";
+  registeredAt: string;
+  articlesSubmitted: number;
+  articlesPublished: number;
+  totalPaidUsd: number;
+  lastSubmissionAt: string | null;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: Role;
+  expiresAt: string;
+  usedAt: string | null;
+  createdAt: string;
+}
+
+export interface PipelineCounts {
+  draft: number;
+  submitted: number;
+  changesRequested: number;
+  resubmitted: number;
+  editorialApproved: number;
+  bannerUploaded: number;
+  published: number;
+  paymentInitiated: number;
+  paymentConfirmed: number;
+}
+
+export interface Overview {
+  totalPublishedAllTime: number;
+  totalPublished30d: number;
+  totalPaidUsdAllTime: number;
+  totalPaidUsd30d: number;
+  activeContributors60d: number;
+  pendingPaymentCount: number;
+  pendingPaymentUsd: number;
+  pipeline: PipelineCounts;
+}
+
+export interface ContributorMetric {
+  contributorId: string;
+  contributorName: string;
+  articlesSubmitted: number;
+  articlesPublished: number;
+  acceptanceRate: number;
+  avgReviewCycles: number;
+  avgDaysToPublish: number;
+}
+
+export interface VolumePoint {
+  period: string;
+  count: number;
+  amount: number;
+}
+
+export interface PlatformMetrics {
+  contributorMetrics: ContributorMetric[];
+  publicationVolume: VolumePoint[];
+  paymentVolume: VolumePoint[];
+  avgPipelineDays: number;
 }
 
 export interface AuthTokens {
