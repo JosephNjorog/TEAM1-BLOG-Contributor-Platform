@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { NotificationBell } from "./NotificationBell";
 
@@ -16,11 +16,11 @@ interface NavItem {
 }
 
 const navByRole: Record<string, NavItem[]> = {
-  contributor: [{ to: "/", label: "My Articles" }],
-  moderator: [{ to: "/", label: "Review Queue" }],
-  graphic_designer: [{ to: "/", label: "Banner Queue" }],
-  publisher: [{ to: "/", label: "Ready to Publish" }],
-  super_admin: [{ to: "/", label: "Overview" }],
+  contributor: [{ to: "/app", label: "My Articles" }],
+  moderator: [{ to: "/app", label: "Review Queue" }],
+  graphic_designer: [{ to: "/app", label: "Banner Queue" }],
+  publisher: [{ to: "/app", label: "Ready to Publish" }],
+  super_admin: [{ to: "/app", label: "Overview" }],
 };
 
 export function AppShell() {
@@ -30,15 +30,16 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen bg-surface-app">
       <aside className="flex w-64 flex-col border-r border-surface-border bg-surface-base">
-        <div className="flex items-center gap-2 px-6 py-5">
+        <Link to="/" className="flex items-center gap-2 px-6 py-5">
           <span className="h-2.5 w-2.5 rounded-full bg-brand-red shadow-glow-red" />
           <span className="text-sm font-bold uppercase tracking-wide text-zinc-100">Team1 Blog</span>
-        </div>
+        </Link>
         <nav className="flex-1 space-y-1 px-3 py-2">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              end
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive ? "bg-surface-raised text-zinc-100" : "text-zinc-400 hover:bg-surface-raised hover:text-zinc-100"
