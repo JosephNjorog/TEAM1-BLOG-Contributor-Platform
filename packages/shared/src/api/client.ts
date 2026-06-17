@@ -75,8 +75,12 @@ export interface RequestOptions {
 }
 
 export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const isFormData = opts.body instanceof FormData;
+
   const doFetch = async (): Promise<Response> => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {};
+    // Let the browser set the multipart boundary itself for FormData bodies.
+    if (!isFormData) headers["Content-Type"] = "application/json";
     if (!opts.skipAuth) {
       const token = getAccessToken();
       if (token) headers.Authorization = `Bearer ${token}`;
@@ -84,7 +88,7 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
     return fetch(`${baseUrl}${path}`, {
       method: opts.method ?? "GET",
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body: isFormData ? (opts.body as FormData) : opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
       signal: opts.signal,
     });
   };
