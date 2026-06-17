@@ -73,6 +73,20 @@ func (h *Handler) ListLedger(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"payments": dtos})
 }
 
+func (h *Handler) ListMine(w http.ResponseWriter, r *http.Request) {
+	userID, _ := auth.UserIDFromContext(r.Context())
+	list, err := h.service.ListForContributor(r.Context(), userID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	dtos := make([]paymentDTO, 0, len(list))
+	for _, p := range list {
+		dtos = append(dtos, toDTO(p))
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"payments": dtos})
+}
+
 func (h *Handler) Release(w http.ResponseWriter, r *http.Request) {
 	adminID, _ := auth.UserIDFromContext(r.Context())
 	articleID, err := uuid.Parse(chi.URLParam(r, "articleId"))
