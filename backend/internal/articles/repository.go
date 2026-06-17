@@ -148,13 +148,63 @@ func (r *Repository) UpdateDraft(ctx context.Context, id uuid.UUID, in UpdateDra
 	return err
 }
 
-// TransitionStatus moves an article to a new status. extra allows
-// callers to also set submitted_at/published_at/reviewer_id etc. in the
-// same statement where relevant.
+// TransitionStatus moves an article to a new status with no other field
+// changes.
 func (r *Repository) TransitionStatus(ctx context.Context, id uuid.UUID, to Status) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE articles SET status = $1, updated_at = now() WHERE id = $2
 	`, to, id)
+	return err
+}
+
+// SetReviewDecision assigns the reviewing moderator and transitions the
+// article in one statement. The reviewer assignment matters beyond this
+// one transition: once the article leaves the shared submitted/resubmitted
+// queue, reviewer_id is what keeps it visible to the moderator who handled
+// it (see visibilityClause), e.g. for their activity log.
+func (r *Repository) SetReviewDecision(ctx context.Context, id, reviewerID uuid.UUID, to Status) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE articles SET status = $1, reviewer_id = $2, updated_at = now() WHERE id = $3
+	`, to, reviewerID, id)
+	return err
+}
+
+// AssignDesigner records which designer picked up an editorial_approved
+// article, without changing its status - banner work happens before the
+// banner_uploaded transition fires.
+func (r *Repository) AssignDesigner(ctx context.Context, id, designerID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE articles SET designer_id = $1, updated_at = now() WHERE id = $2
+	`, designerID, id)
+	return err
+}
+
+// SetBannerURL records an uploaded banner without changing article status -
+// a designer can re-upload a better banner before marking it ready.
+func (r *Repository) SetBannerURL(ctx context.Context, id uuid.UUID, bannerURL string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE articles SET cloudinary_banner_url = $1, updated_at = now() WHERE id = $2
+	`, bannerURL, id)
+	return err
+}
+
+// MarkBannerReady transitions an article into banner_uploaded once the
+// designer confirms the banner is final.
+func (r *Repository) MarkBannerReady(ctx context.Context, id uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE articles SET status = 'banner_uploaded', updated_at = now() WHERE id = $1
+	`, id)
+	return err
+}
+
+// MarkPublished records the publisher, the live Substack URL, and the
+// publication timestamp in one statement.
+func (r *Repository) MarkPublished(ctx context.Context, id, publisherID uuid.UUID, substackURL string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE articles
+		SET status = 'published', publisher_id = $1, substack_url = $2, published_at = now(), updated_at = now()
+		WHERE id = $3
+	`, publisherID, substackURL, id)
 	return err
 }
 
