@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: team1blog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: team1
+      POSTGRES_PASSWORD: team1
+      POSTGRES_DB: team1blog
+    ports:
+      - "5433:5432"
+    volumes:
+      - team1blog_pgdata:/var/lib/postgresql/data
+
+volumes:
+  team1blog_pgdata:
