@@ -9,10 +9,14 @@ import (
 func Routes(handler *Handler, issuer *auth.TokenIssuer) chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth.RequireAuth(issuer))
-	r.Use(auth.RequireRole(users.RoleSuperAdmin))
 
-	r.Get("/", handler.ListLedger)
-	r.Post("/{articleId}/release", handler.Release)
+	r.Get("/mine", handler.ListMine)
+
+	r.Group(func(adminOnly chi.Router) {
+		adminOnly.Use(auth.RequireRole(users.RoleSuperAdmin))
+		adminOnly.Get("/", handler.ListLedger)
+		adminOnly.Post("/{articleId}/release", handler.Release)
+	})
 
 	return r
 }
