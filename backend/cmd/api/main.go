@@ -10,17 +10,21 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"team1blog/backend/internal/admin"
 	"team1blog/backend/internal/articles"
 	"team1blog/backend/internal/audit"
 	"team1blog/backend/internal/auth"
+	"team1blog/backend/internal/avalanche"
 	"team1blog/backend/internal/banners"
 	"team1blog/backend/internal/cloudinary"
 	"team1blog/backend/internal/config"
 	"team1blog/backend/internal/db"
 	"team1blog/backend/internal/email"
 	"team1blog/backend/internal/notifications"
+	"team1blog/backend/internal/payments"
 	"team1blog/backend/internal/profile"
 	"team1blog/backend/internal/reviews"
+	"team1blog/backend/internal/substack"
 	"team1blog/backend/internal/uploads"
 	"team1blog/backend/internal/users"
 )
@@ -69,6 +73,23 @@ func main() {
 
 	uploadsHandler := uploads.NewHandler(articlesRepo, uploader)
 
+	avalancheSender, err := avalanche.NewSender(cfg.AvalancheRPCURL, cfg.AvalancheTreasuryKey, cfg.AvalancheUSDCContract, cfg.AvalancheChainID, cfg.MockPayments)
+	if err != nil {
+		log.Fatalf("avalanche sender setup failed: %v", err)
+	}
+	paymentsRepo := payments.NewRepository(pool)
+	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsRepo, avalancheSender, auditLogger, mailer, frontendAppURL(cfg), cfg.MockPayments)
+	paymentsHandler := payments.NewHandler(paymentsService)
+
+	adminRepo := admin.NewRepository(pool)
+	adminService := admin.NewService(adminRepo, usersRepo, auditLogger)
+	adminHandler := admin.NewHandler(adminService)
+
+	substackFetcher := substack.NewFetcher(cfg.SubstackPublicationURL, cfg.MockSubstack)
+	substackRepo := substack.NewRepository(pool)
+	substackService := substack.NewService(substackRepo, usersRepo, substackFetcher)
+	substackHandler := substack.NewHandler(substackService)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
@@ -103,7 +124,12 @@ func main() {
 		api.Mount("/reviews", reviews.Routes(reviewsHandler, tokenIssuer))
 		api.Mount("/banners", banners.Routes(bannersHandler, tokenIssuer))
 		api.Mount("/uploads", uploads.Routes(uploadsHandler, tokenIssuer))
+		api.Mount("/payments", payments.Routes(paymentsHandler, tokenIssuer))
+		api.Mount("/admin", admin.Routes(adminHandler, tokenIssuer))
+		api.Mount("/sync/substack", substack.Routes(substackHandler, tokenIssuer))
 	})
+
+	startSubstackScheduler(ctx, substackService)
 
 	logIntegrationModes(cfg)
 
@@ -112,6 +138,36 @@ func main() {
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
+}
+
+// startSubstackScheduler runs an initial sync shortly after boot, then
+// repeats every 6 hours per the PRD, independent of the manual admin-
+// triggered sync endpoint.
+func startSubstackScheduler(ctx context.Context, service *substack.Service) {
+	go func() {
+		time.Sleep(10 * time.Second)
+		runSubstackSync(ctx, service)
+
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				runSubstackSync(ctx, service)
+			}
+		}
+	}()
+}
+
+func runSubstackSync(ctx context.Context, service *substack.Service) {
+	count, err := service.Sync(ctx)
+	if err != nil {
+		log.Printf("substack sync failed: %v", err)
+		return
+	}
+	log.Printf("substack sync complete: %d posts", count)
 }
 
 func frontendAppURL(cfg *config.Config) string {
