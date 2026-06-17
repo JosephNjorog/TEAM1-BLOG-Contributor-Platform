@@ -72,7 +72,7 @@ export function ArticleEditorPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <button onClick={() => navigate("/")} className="mb-4 text-sm text-zinc-500 hover:text-zinc-300">
+      <button onClick={() => navigate("/app")} className="mb-4 text-sm text-zinc-500 hover:text-zinc-300">
         ← Back to my articles
       </button>
 
