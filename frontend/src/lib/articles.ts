@@ -59,3 +59,14 @@ export function useDeleteArticle() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["articles"] }),
   });
 }
+
+export function usePublishArticle(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (substackUrl: string) => apiRequest<Article>(`/articles/${id}/publish`, { method: "POST", body: { substackUrl } }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["articles", id], data);
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+  });
+}
