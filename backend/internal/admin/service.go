@@ -30,6 +30,23 @@ func (s *Service) ListPendingInvitations(ctx context.Context) ([]*PendingInvitat
 	return s.repo.ListPendingInvitations(ctx)
 }
 
+// ListStaff returns every non-contributor account (moderators, designers,
+// publishers, other Super Admins) for the user management screen -
+// contributors get their own dedicated view with article/payment stats.
+func (s *Service) ListStaff(ctx context.Context) ([]*users.User, error) {
+	all, err := s.usersRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	staff := make([]*users.User, 0, len(all))
+	for _, u := range all {
+		if u.Role != users.RoleContributor {
+			staff = append(staff, u)
+		}
+	}
+	return staff, nil
+}
+
 func (s *Service) GetOverview(ctx context.Context) (*Overview, error) {
 	return s.repo.GetOverview(ctx)
 }
