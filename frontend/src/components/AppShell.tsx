@@ -16,11 +16,22 @@ interface NavItem {
 }
 
 const navByRole: Record<string, NavItem[]> = {
-  contributor: [{ to: "/app", label: "My Articles" }],
+  contributor: [
+    { to: "/app", label: "My Articles" },
+    { to: "/app/published", label: "Published" },
+    { to: "/app/my-payments", label: "Payments" },
+  ],
   moderator: [{ to: "/app", label: "Review Queue" }],
   graphic_designer: [{ to: "/app", label: "Banner Queue" }],
   publisher: [{ to: "/app", label: "Ready to Publish" }],
-  super_admin: [{ to: "/app", label: "Overview" }],
+  super_admin: [
+    { to: "/app", label: "Overview" },
+    { to: "/app/pipeline", label: "Pipeline" },
+    { to: "/app/contributors", label: "Contributors" },
+    { to: "/app/payments", label: "Payments" },
+    { to: "/app/users", label: "Users & Invites" },
+    { to: "/app/analytics", label: "Analytics" },
+  ],
 };
 
 export function AppShell() {
