@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -17,6 +17,16 @@ function wordCount(editor: Editor): number {
 }
 
 export function RichTextEditor({ content, editable, onChange }: RichTextEditorProps) {
+  // Tiptap can fire onUpdate more than once during its own initial content
+  // setup (e.g. normalizing into a trailing paragraph) - that's an
+  // artifact of mounting, not a user edit, and shouldn't mark the article
+  // dirty. There's no fixed number of these to "skip"; instead, an editor
+  // instance is only considered ready to report real changes once a tick
+  // has passed since its creation, since no user keystroke can land that
+  // fast. Tracked per-instance (by object identity) so React StrictMode's
+  // dev-mode double-invoke can't race two instances against one shared flag.
+  const readyEditors = useRef(new WeakSet<Editor>()).current;
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -26,7 +36,13 @@ export function RichTextEditor({ content, editable, onChange }: RichTextEditorPr
     ],
     content,
     editable,
-    onUpdate: ({ editor }) => onChange(editor.getHTML(), wordCount(editor)),
+    onCreate: ({ editor }) => {
+      setTimeout(() => readyEditors.add(editor), 0);
+    },
+    onUpdate: ({ editor }) => {
+      if (!readyEditors.has(editor)) return;
+      onChange(editor.getHTML(), wordCount(editor));
+    },
   });
 
   useEffect(() => {
