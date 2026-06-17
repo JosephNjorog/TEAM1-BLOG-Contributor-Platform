@@ -14,6 +14,7 @@ func Routes(handler *Handler, issuer *auth.TokenIssuer) chi.Router {
 	r.Get("/overview", handler.Overview)
 	r.Get("/analytics", handler.Analytics)
 	r.Get("/contributors", handler.ListContributors)
+	r.Get("/staff", handler.ListStaff)
 	r.Get("/invitations", handler.ListInvitations)
 	r.Patch("/users/{id}/status", handler.SetUserStatus)
 	r.Patch("/users/{id}/role", handler.UpdateUserRole)
