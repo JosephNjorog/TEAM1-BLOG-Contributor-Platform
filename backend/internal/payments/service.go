@@ -162,6 +162,10 @@ func (s *Service) ListLedger(ctx context.Context) ([]*Payment, error) {
 	return s.repo.ListLedger(ctx)
 }
 
+func (s *Service) ListForContributor(ctx context.Context, contributorID uuid.UUID) ([]*Payment, error) {
+	return s.repo.ListForContributor(ctx, contributorID)
+}
+
 func (s *Service) GetByArticle(ctx context.Context, articleID uuid.UUID) (*Payment, error) {
 	return s.repo.GetByArticle(ctx, articleID)
 }
