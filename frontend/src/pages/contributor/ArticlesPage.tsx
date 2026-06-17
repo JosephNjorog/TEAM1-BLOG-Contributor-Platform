@@ -13,7 +13,7 @@ export function ArticlesPage() {
 
   const onNewDraft = async () => {
     const article = await createArticle.mutateAsync({ title: "Untitled draft", content: "" });
-    navigate(`/articles/${article.id}`);
+    navigate(`/app/articles/${article.id}`);
   };
 
   return (
@@ -40,7 +40,7 @@ export function ArticlesPage() {
             <Card
               key={a.id}
               className="cursor-pointer transition-colors hover:border-zinc-700"
-              onClick={() => navigate(`/articles/${a.id}`)}
+              onClick={() => navigate(`/app/articles/${a.id}`)}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
