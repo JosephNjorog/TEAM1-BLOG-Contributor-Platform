@@ -50,11 +50,11 @@ export interface Article {
 
 export interface Suggestion {
   id: string;
-  articleId: string;
   reviewCycleId: string;
   reviewerId: string;
   reviewerName: string;
-  textRange: { start: number; end: number };
+  rangeStart: number;
+  rangeEnd: number;
   suggestionText: string;
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
@@ -62,8 +62,8 @@ export interface Suggestion {
 
 export interface ReviewCycle {
   id: string;
-  articleId: string;
-  reviewerId: string;
+  articleTitle?: string;
+  contributorName?: string;
   reviewerName: string;
   decision: "approved" | "changes_requested";
   summary: string;
@@ -74,6 +74,7 @@ export interface Banner {
   id: string;
   articleId: string;
   designerId: string;
+  designerName: string;
   cloudinaryUrl: string;
   uploadedAt: string;
   markedReadyAt: string | null;
