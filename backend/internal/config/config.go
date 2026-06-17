@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Port            string
+	PublicAPIURL    string
 	Env             string
 	DatabaseURL     string
 	JWTSecret       string
@@ -44,6 +45,7 @@ func Load() *Config {
 
 	cfg := &Config{
 		Port:            getEnv("PORT", "8080"),
+		PublicAPIURL:    getEnv("PUBLIC_API_URL", "http://localhost:8080"),
 		Env:             getEnv("ENV", "development"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://team1:team1@localhost:5433/team1blog?sslmode=disable"),
 		JWTSecret:       getEnv("JWT_SECRET", "dev-insecure-secret-change-me"),
