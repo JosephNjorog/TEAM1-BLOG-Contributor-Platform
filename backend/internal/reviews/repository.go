@@ -117,10 +117,11 @@ func (r *Repository) ListCyclesForArticle(ctx context.Context, articleID uuid.UU
 // decision they've made, newest first, with the article title for context.
 func (r *Repository) ListActivityForReviewer(ctx context.Context, reviewerID uuid.UUID) ([]*ReviewCycle, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT rc.id, rc.article_id, a.title, rc.reviewer_id, u.name, rc.decision, rc.summary, rc.created_at
+		SELECT rc.id, rc.article_id, a.title, c.name, rc.reviewer_id, u.name, rc.decision, rc.summary, rc.created_at
 		FROM review_cycles rc
 		JOIN users u ON u.id = rc.reviewer_id
 		JOIN articles a ON a.id = rc.article_id
+		JOIN users c ON c.id = a.contributor_id
 		WHERE rc.reviewer_id = $1
 		ORDER BY rc.created_at DESC
 	`, reviewerID)
@@ -132,7 +133,7 @@ func (r *Repository) ListActivityForReviewer(ctx context.Context, reviewerID uui
 	var out []*ReviewCycle
 	for rows.Next() {
 		var c ReviewCycle
-		if err := rows.Scan(&c.ID, &c.ArticleID, &c.ArticleTitle, &c.ReviewerID, &c.ReviewerName, &c.Decision, &c.Summary, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.ArticleID, &c.ArticleTitle, &c.ContributorName, &c.ReviewerID, &c.ReviewerName, &c.Decision, &c.Summary, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &c)
