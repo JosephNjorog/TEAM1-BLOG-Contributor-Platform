@@ -108,3 +108,21 @@ func (r *Repository) ListLedger(ctx context.Context) ([]*Payment, error) {
 	}
 	return out, rows.Err()
 }
+
+func (r *Repository) ListForContributor(ctx context.Context, contributorID uuid.UUID) ([]*Payment, error) {
+	rows, err := r.pool.Query(ctx, baseSelect+` WHERE p.contributor_id = $1 ORDER BY p.created_at DESC`, contributorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*Payment
+	for rows.Next() {
+		p, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
