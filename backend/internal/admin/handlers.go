@@ -80,6 +80,26 @@ func (h *Handler) ListInvitations(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"invitations": dtos})
 }
 
+func (h *Handler) ListStaff(w http.ResponseWriter, r *http.Request) {
+	list, err := h.service.ListStaff(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	dtos := make([]map[string]any, 0, len(list))
+	for _, u := range list {
+		dtos = append(dtos, map[string]any{
+			"id":        u.ID,
+			"name":      u.Name,
+			"email":     u.Email,
+			"role":      u.Role,
+			"status":    u.Status,
+			"createdAt": u.CreatedAt.Format(timeFmt),
+		})
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"staff": dtos})
+}
+
 func (h *Handler) Overview(w http.ResponseWriter, r *http.Request) {
 	o, err := h.service.GetOverview(r.Context())
 	if err != nil {
