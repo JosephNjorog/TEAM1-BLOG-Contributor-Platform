@@ -23,5 +23,10 @@ func Routes(handler *Handler, issuer *auth.TokenIssuer) chi.Router {
 		contributorOnly.Delete("/{id}", handler.Delete)
 	})
 
+	r.Group(func(publisherOnly chi.Router) {
+		publisherOnly.Use(auth.RequireRole(users.RolePublisher))
+		publisherOnly.Post("/{id}/publish", handler.Publish)
+	})
+
 	return r
 }
