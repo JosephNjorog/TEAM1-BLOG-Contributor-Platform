@@ -1,16 +1,22 @@
 import { useAuth } from "../lib/auth";
 import { ArticlesPage } from "./contributor/ArticlesPage";
+import { ReviewQueuePage } from "./moderator/ReviewQueuePage";
+import { BannerQueuePage } from "./designer/BannerQueuePage";
+import { ReadyToPublishPage } from "./publisher/ReadyToPublishPage";
 import { ComingSoonPage } from "./ComingSoonPage";
-
-const titles: Record<string, string> = {
-  moderator: "Review Queue",
-  graphic_designer: "Banner Queue",
-  publisher: "Ready to Publish",
-  super_admin: "Overview",
-};
 
 export function RoleHome() {
   const { user } = useAuth();
-  if (user?.role === "contributor") return <ArticlesPage />;
-  return <ComingSoonPage title={titles[user?.role ?? ""] ?? "Dashboard"} />;
+  switch (user?.role) {
+    case "contributor":
+      return <ArticlesPage />;
+    case "moderator":
+      return <ReviewQueuePage />;
+    case "graphic_designer":
+      return <BannerQueuePage />;
+    case "publisher":
+      return <ReadyToPublishPage />;
+    default:
+      return <ComingSoonPage title="Overview" />;
+  }
 }
