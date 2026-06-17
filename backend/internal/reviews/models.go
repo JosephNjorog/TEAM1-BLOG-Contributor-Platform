@@ -22,14 +22,15 @@ const (
 )
 
 type ReviewCycle struct {
-	ID           uuid.UUID
-	ArticleID    uuid.UUID
-	ArticleTitle string
-	ReviewerID   uuid.UUID
-	ReviewerName string
-	Decision     Decision
-	Summary      string
-	CreatedAt    time.Time
+	ID              uuid.UUID
+	ArticleID       uuid.UUID
+	ArticleTitle    string
+	ContributorName string
+	ReviewerID      uuid.UUID
+	ReviewerName    string
+	Decision        Decision
+	Summary         string
+	CreatedAt       time.Time
 }
 
 type Suggestion struct {
