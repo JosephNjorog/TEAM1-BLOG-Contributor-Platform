@@ -15,7 +15,7 @@ export function ProtectedRoute({ allow, children }: { allow: Role[]; children: R
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!allow.includes(user.role)) return <Navigate to="/" replace />;
+  if (!allow.includes(user.role)) return <Navigate to="/app" replace />;
 
   return <>{children}</>;
 }
