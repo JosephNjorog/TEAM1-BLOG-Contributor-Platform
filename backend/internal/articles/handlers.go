@@ -37,7 +37,7 @@ type articleDTO struct {
 	PublishedAt         *string   `json:"publishedAt"`
 }
 
-func toDTO(a *Article) articleDTO {
+func ToDTO(a *Article) articleDTO {
 	dto := articleDTO{
 		ID:                  a.ID,
 		ContributorID:       a.ContributorID,
@@ -88,7 +88,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	httpx.JSON(w, http.StatusCreated, toDTO(a))
+	httpx.JSON(w, http.StatusCreated, ToDTO(a))
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +101,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	dtos := make([]articleDTO, 0, len(list))
 	for _, a := range list {
-		dtos = append(dtos, toDTO(a))
+		dtos = append(dtos, ToDTO(a))
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"articles": dtos})
 }
@@ -120,7 +120,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, status, code, err.Error())
 		return
 	}
-	httpx.JSON(w, http.StatusOK, toDTO(a))
+	httpx.JSON(w, http.StatusOK, ToDTO(a))
 }
 
 type updateRequest struct {
@@ -151,7 +151,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, status, code, err.Error())
 		return
 	}
-	httpx.JSON(w, http.StatusOK, toDTO(a))
+	httpx.JSON(w, http.StatusOK, ToDTO(a))
 }
 
 func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +167,32 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, status, code, err.Error())
 		return
 	}
-	httpx.JSON(w, http.StatusOK, toDTO(a))
+	httpx.JSON(w, http.StatusOK, ToDTO(a))
+}
+
+type publishRequest struct {
+	SubstackURL string `json:"substackUrl"`
+}
+
+func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
+	userID, _ := auth.UserIDFromContext(r.Context())
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad_request", "invalid article id")
+		return
+	}
+	var req publishRequest
+	if err := httpx.DecodeJSON(r, &req); err != nil || req.SubstackURL == "" {
+		httpx.Error(w, http.StatusBadRequest, "bad_request", "substackUrl is required")
+		return
+	}
+	a, err := h.service.Publish(r.Context(), id, userID, req.SubstackURL)
+	if err != nil {
+		status, code := mapArticleError(err)
+		httpx.Error(w, status, code, err.Error())
+		return
+	}
+	httpx.JSON(w, http.StatusOK, ToDTO(a))
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -193,6 +218,8 @@ func mapArticleError(err error) (int, string) {
 		return http.StatusForbidden, "forbidden"
 	case errors.Is(err, ErrNotEditable):
 		return http.StatusConflict, "article_not_editable"
+	case errors.Is(err, ErrNotReadyToPublish):
+		return http.StatusConflict, "article_not_ready_to_publish"
 	default:
 		return http.StatusInternalServerError, "internal_error"
 	}
