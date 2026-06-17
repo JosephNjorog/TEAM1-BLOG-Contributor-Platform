@@ -1,0 +1,15 @@
+{
+  "name": "team1-blog-contributor-platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "super-admin",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:admin": "npm run dev -w super-admin",
+    "build": "npm run build -w packages/shared && npm run build -w frontend && npm run build -w super-admin",
+    "typecheck": "npm run typecheck -w packages/shared && npm run typecheck -w frontend && npm run typecheck -w super-admin"
+  }
+}
