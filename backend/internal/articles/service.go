@@ -142,3 +142,49 @@ func (s *Service) Submit(ctx context.Context, articleID, contributorID uuid.UUID
 
 	return s.repo.GetByID(ctx, articleID)
 }
+
+var ErrNotReadyToPublish = errors.New("article is not ready to publish")
+
+// Publish confirms a banner_uploaded article is live, recording the
+// Substack URL and notifying the contributor, the moderator who approved
+// it, and every Super Admin (who needs to act on releasing payment).
+func (s *Service) Publish(ctx context.Context, articleID, publisherID uuid.UUID, substackURL string) (*Article, error) {
+	a, err := s.repo.GetByID(ctx, articleID)
+	if err != nil {
+		return nil, err
+	}
+	if a.Status != StatusBannerUploaded {
+		return nil, ErrNotReadyToPublish
+	}
+	if err := ValidateTransition(a.Status, StatusPublished); err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.MarkPublished(ctx, articleID, publisherID, substackURL); err != nil {
+		return nil, err
+	}
+
+	dashboardURL := fmt.Sprintf("%s/articles/%s", s.appURL, articleID)
+	subject, html := email.ArticlePublishedEmail(a.Title, dashboardURL)
+
+	_, _ = s.notifications.Create(ctx, a.ContributorID, notifications.TypeArticlePublished, &articleID,
+		fmt.Sprintf("%q is now live", a.Title))
+	if contributor, err := s.usersRepo.GetByID(ctx, a.ContributorID); err == nil {
+		_ = s.mailer.Send(ctx, contributor.Email, subject, html)
+	}
+
+	if a.ReviewerID != nil {
+		_, _ = s.notifications.Create(ctx, *a.ReviewerID, notifications.TypeArticlePublished, &articleID,
+			fmt.Sprintf("%q was published", a.Title))
+		if reviewer, err := s.usersRepo.GetByID(ctx, *a.ReviewerID); err == nil {
+			_ = s.mailer.Send(ctx, reviewer.Email, subject, html)
+		}
+	}
+
+	_ = s.notifications.CreateForRole(ctx, string(users.RoleSuperAdmin), notifications.TypeArticlePublished, &articleID,
+		fmt.Sprintf("%q was published - payment release needed", a.Title))
+
+	_ = s.audit.Log(ctx, &publisherID, "article_published", "article", &articleID, map[string]any{"substackUrl": substackURL})
+
+	return s.repo.GetByID(ctx, articleID)
+}
