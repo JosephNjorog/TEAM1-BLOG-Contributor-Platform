@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: #0a0a0b;
+}
+
+/* Tiptap editor body typography */
+.article-editor .ProseMirror {
+  outline: none;
+  min-height: 420px;
+}
+
+.article-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #71717a;
+}
+
+.article-editor .ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.article-editor .ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.article-editor .ProseMirror p {
+  margin-bottom: 0.85rem;
+  line-height: 1.7;
+}
+
+.article-editor .ProseMirror a {
+  color: #e84142;
+  text-decoration: underline;
+}
+
+.article-editor .ProseMirror img {
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+  max-width: 100%;
+}
+
+.article-editor .ProseMirror ul,
+.article-editor .ProseMirror ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.85rem;
+}
