@@ -7,6 +7,9 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RoleHome } from "./pages/RoleHome";
 import { ArticleEditorPage } from "./pages/contributor/ArticleEditorPage";
+import { ReviewArticlePage } from "./pages/moderator/ReviewArticlePage";
+import { BannerUploadPage } from "./pages/designer/BannerUploadPage";
+import { PublishArticlePage } from "./pages/publisher/PublishArticlePage";
 
 const ALL_ROLES: Role[] = ["super_admin", "moderator", "graphic_designer", "publisher", "contributor"];
 
@@ -31,6 +34,30 @@ export function App() {
           element={
             <ProtectedRoute allow={["contributor"]}>
               <ArticleEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="review/:id"
+          element={
+            <ProtectedRoute allow={["moderator"]}>
+              <ReviewArticlePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="banner/:id"
+          element={
+            <ProtectedRoute allow={["graphic_designer"]}>
+              <BannerUploadPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="publish/:id"
+          element={
+            <ProtectedRoute allow={["publisher"]}>
+              <PublishArticlePage />
             </ProtectedRoute>
           }
         />
