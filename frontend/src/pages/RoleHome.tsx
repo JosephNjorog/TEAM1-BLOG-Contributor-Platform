@@ -3,7 +3,7 @@ import { ArticlesPage } from "./contributor/ArticlesPage";
 import { ReviewQueuePage } from "./moderator/ReviewQueuePage";
 import { BannerQueuePage } from "./designer/BannerQueuePage";
 import { ReadyToPublishPage } from "./publisher/ReadyToPublishPage";
-import { ComingSoonPage } from "./ComingSoonPage";
+import { OverviewPage } from "./admin/OverviewPage";
 
 export function RoleHome() {
   const { user } = useAuth();
@@ -16,7 +16,9 @@ export function RoleHome() {
       return <BannerQueuePage />;
     case "publisher":
       return <ReadyToPublishPage />;
+    case "super_admin":
+      return <OverviewPage />;
     default:
-      return <ComingSoonPage title="Overview" />;
+      return null;
   }
 }
