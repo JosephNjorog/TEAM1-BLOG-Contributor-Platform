@@ -4,6 +4,7 @@ build/
 .env
 .env.local
 *.log
+*.tsbuildinfo
 
 # Go
 backend/team1-api
