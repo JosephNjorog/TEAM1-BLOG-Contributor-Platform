@@ -10,11 +10,14 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"team1blog/backend/internal/articles"
 	"team1blog/backend/internal/audit"
 	"team1blog/backend/internal/auth"
 	"team1blog/backend/internal/config"
 	"team1blog/backend/internal/db"
 	"team1blog/backend/internal/email"
+	"team1blog/backend/internal/notifications"
+	"team1blog/backend/internal/profile"
 	"team1blog/backend/internal/users"
 )
 
@@ -41,6 +44,15 @@ func main() {
 	authService := auth.NewService(usersRepo, authRepo, tokenIssuer, auditLogger, mailer, cfg.InviteTTL, cfg.RefreshTokenTTL, frontendAppURL(cfg))
 	authHandler := auth.NewHandler(authService)
 
+	profileHandler := profile.NewHandler(usersRepo)
+
+	notificationsRepo := notifications.NewRepository(pool)
+	notificationsHandler := notifications.NewHandler(notificationsRepo)
+
+	articlesRepo := articles.NewRepository(pool)
+	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, frontendAppURL(cfg))
+	articlesHandler := articles.NewHandler(articlesService)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
@@ -62,6 +74,9 @@ func main() {
 
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Mount("/auth", auth.Routes(authHandler, tokenIssuer))
+		api.Mount("/me", profile.Routes(profileHandler, tokenIssuer))
+		api.Mount("/notifications", notifications.Routes(notificationsHandler, tokenIssuer))
+		api.Mount("/articles", articles.Routes(articlesHandler, tokenIssuer))
 	})
 
 	logIntegrationModes(cfg)
