@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Spinner, StatusPill } from "@team1/shared";
 import { useArticle, useSubmitArticle, useUpdateArticle } from "../../lib/articles";
+import { useAcceptSuggestion, useArticleFeedback, useRejectSuggestion } from "../../lib/reviews";
 import { RichTextEditor } from "../../components/RichTextEditor";
 import { SubmitDialog } from "../../components/SubmitDialog";
+import { FeedbackPanel } from "../../components/FeedbackPanel";
 
 const AUTOSAVE_INTERVAL_MS = 60_000;
 
@@ -17,6 +19,9 @@ export function ArticleEditorPage() {
   const { data: article, isLoading } = useArticle(id);
   const updateArticle = useUpdateArticle(id);
   const submitArticle = useSubmitArticle(id);
+  const { data: feedback } = useArticleFeedback(id);
+  const acceptSuggestion = useAcceptSuggestion();
+  const rejectSuggestion = useRejectSuggestion();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -25,6 +30,7 @@ export function ArticleEditorPage() {
   const [dirty, setDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const hydrated = useRef(false);
 
@@ -35,6 +41,11 @@ export function ArticleEditorPage() {
       setSourceCitation(article.sourceCitation ?? "");
       setWordCount(article.wordCount);
       hydrated.current = true;
+      // Only mount the rich text editor once its initial content is the
+      // real article body - Tiptap's `content` option is read once at
+      // mount and never re-applied, so mounting it before hydration would
+      // leave it permanently empty even after this state updates.
+      setReady(true);
     }
   }, [article]);
 
@@ -56,7 +67,7 @@ export function ArticleEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable, dirty, title, content, sourceCitation]);
 
-  if (isLoading || !article) {
+  if (isLoading || !article || !ready) {
     return (
       <div className="flex justify-center py-16">
         <Spinner />
@@ -122,11 +133,24 @@ export function ArticleEditorPage() {
       />
 
       {editable && (
-        <div className="flex justify-end gap-3">
+        <div className="mb-8 flex justify-end gap-3">
           <Button variant="secondary" onClick={save} loading={updateArticle.isPending} disabled={!dirty}>
             Save
           </Button>
           <Button onClick={() => setShowSubmitDialog(true)}>Submit for Review</Button>
+        </div>
+      )}
+
+      {feedback && (feedback.reviewCycles.length > 0 || feedback.suggestions.length > 0) && (
+        <div>
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Reviewer feedback</p>
+          <FeedbackPanel
+            reviewCycles={feedback.reviewCycles}
+            suggestions={feedback.suggestions}
+            onAccept={(suggestionId) => acceptSuggestion.mutate(suggestionId)}
+            onReject={(suggestionId) => rejectSuggestion.mutate(suggestionId)}
+            busySuggestionId={acceptSuggestion.isPending || rejectSuggestion.isPending ? (acceptSuggestion.variables ?? rejectSuggestion.variables) : undefined}
+          />
         </div>
       )}
 
