@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, ApiClientError } from "@team1/shared";
 import { useAuth } from "../lib/auth";
 
@@ -18,7 +18,7 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app" replace />;
 
   if (!token) {
     return (
@@ -46,7 +46,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await registerFromInvite({ token, name, password, bio, walletAddress });
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Try again.");
     } finally {
@@ -57,10 +57,10 @@ export function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface-app px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-2">
+        <Link to="/" className="mb-8 flex items-center justify-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-brand-red shadow-glow-red" />
           <span className="text-sm font-bold uppercase tracking-wide text-zinc-100">Team1 Blog</span>
-        </div>
+        </Link>
 
         <form onSubmit={onSubmit} className="rounded-xl2 border border-surface-border bg-surface-card p-6 shadow-xl">
           <h1 className="mb-1 text-lg font-semibold text-zinc-100">Accept your invitation</h1>
