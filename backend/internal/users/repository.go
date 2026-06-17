@@ -70,6 +70,24 @@ func (r *Repository) UpdateProfile(ctx context.Context, id uuid.UUID, name, bio 
 	return err
 }
 
+func (r *Repository) ListByRole(ctx context.Context, role Role) ([]*User, error) {
+	rows, err := r.pool.Query(ctx, `SELECT `+selectColumns+` FROM users WHERE role = $1 AND status = 'active'`, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
 func (r *Repository) List(ctx context.Context) ([]*User, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+selectColumns+` FROM users ORDER BY created_at DESC`)
 	if err != nil {
