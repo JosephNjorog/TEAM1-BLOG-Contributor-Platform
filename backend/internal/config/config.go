@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -31,6 +32,7 @@ type Config struct {
 
 	// Avalanche / Core wallet payments
 	AvalancheRPCURL       string
+	AvalancheChainID      int64
 	AvalancheTreasuryKey  string
 	AvalancheUSDCContract string
 	MockPayments          bool
@@ -62,6 +64,7 @@ func Load() *Config {
 		CloudinaryAPISecret: os.Getenv("CLOUDINARY_API_SECRET"),
 
 		AvalancheRPCURL:       getEnv("AVALANCHE_RPC_URL", "https://api.avax-test.network/ext/bc/C/rpc"),
+		AvalancheChainID:      int64Env("AVALANCHE_CHAIN_ID", 43113), // Fuji testnet; 43114 is C-Chain mainnet
 		AvalancheTreasuryKey:  os.Getenv("AVALANCHE_TREASURY_PRIVATE_KEY"),
 		AvalancheUSDCContract: getEnv("AVALANCHE_USDC_CONTRACT_ADDRESS", ""),
 
@@ -87,6 +90,15 @@ func durationEnv(key string, fallback time.Duration) time.Duration {
 	if v := os.Getenv(key); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			return d
+		}
+	}
+	return fallback
+}
+
+func int64Env(key string, fallback int64) int64 {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return n
 		}
 	}
 	return fallback
