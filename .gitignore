@@ -10,6 +10,7 @@ build/
 backend/team1-api
 backend/.devmail/
 backend/tmp/
+backend/uploads/
 
 # OS
 .DS_Store
