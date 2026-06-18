@@ -72,4 +72,39 @@ There's no public registration - the very first Super Admin account has to be cr
 DATABASE_URL=... go run ./cmd/seed
 ```
 
-Log in as the seeded Super Admin, immediately change its password (or invite a real Super Admin and deactivate the seeded one), and deactivate the other four seeded accounts from the Users & Invites / Contributors pages once real invites have gone out.
+Log in as the seeded Super Admin, immediately change its password (or invite a real Super Admin and deactivate the seeded one), and deactivate the other seeded accounts from the Users & Invites / Contributors pages once real invites have gone out.
+
+### Demo/test credentials
+
+`cmd/seed` creates these accounts (password `password123` for all). The Neon database backing this deploy already has demo data walked through the real API across every pipeline stage (drafts, in review, changes requested, banner stage, published, paid) - see `backend/scripts/seed-demo-data.sh` to regenerate it against any environment.
+
+| Role | Email | Notes |
+|---|---|---|
+| Super Admin | `admin@team1.blog` | Use the `super-admin` app |
+| Moderator | `moderator@team1.blog` | Use the `frontend` app |
+| Graphic Designer | `designer@team1.blog` | Use the `frontend` app |
+| Publisher | `publisher@team1.blog` | Use the `frontend` app |
+| Contributor | `contributor@team1.blog` | Use the `frontend` app |
+| Contributor | `amara@team1.blog` | Use the `frontend` app |
+| Contributor | `tunde@team1.blog` | Use the `frontend` app |
+
+## 7. This exact topology: Render (backend) + Vercel (both frontends)
+
+### Backend on Render
+
+`render.yaml` at the repo root is a Render Blueprint - in the Render dashboard, "New" → "Blueprint", point it at this repo, and it picks up `render.yaml` automatically. It builds `backend/Dockerfile` with `rootDir: backend`, generates `JWT_SECRET` for you, and leaves every secret (`DATABASE_URL`, `CORS_ORIGINS`, `FRONTEND_URL`, `ADMIN_APP_URL`, `RESEND_API_KEY`, `CLOUDINARY_*`, `AVALANCHE_TREASURY_PRIVATE_KEY`, etc.) blank for you to fill in via the dashboard rather than committing them to git. At minimum set `DATABASE_URL` (Neon) and `PUBLIC_API_URL` (Render gives you this once the service exists, e.g. `https://team1blog-api.onrender.com`) before the first real deploy; everything else can stay blank to run in mock mode.
+
+### Both frontends on Vercel
+
+Each app (`frontend/`, `super-admin/`) needs its **own Vercel project** pointed at this same repo, with **Root Directory** set to that folder in the project's Settings → General. Vercel then reads the `vercel.json` already committed inside each folder, which handles the npm-workspaces monorepo install/build (`cd .. && npm install` then `npm run build -w <app>`) and adds the SPA rewrite so client-side routes don't 404 on refresh.
+
+Since the API (Render) and both frontends (Vercel) are on different domains, this is the "separate domains" case from §2 above - set these as **Environment Variables** in each Vercel project (Settings → Environment Variables, available at build time since Vite inlines them):
+
+| Vercel project | Variable | Value |
+|---|---|---|
+| `frontend` | `VITE_API_BASE_URL` | `https://<your-render-service>.onrender.com/api/v1` |
+| `frontend` | `VITE_ADMIN_APP_URL` | `https://<your-super-admin-project>.vercel.app` |
+| `super-admin` | `VITE_API_BASE_URL` | `https://<your-render-service>.onrender.com/api/v1` |
+| `super-admin` | `VITE_FRONTEND_URL` | `https://<your-frontend-project>.vercel.app` |
+
+Then on the Render backend, set `CORS_ORIGINS` to both Vercel URLs (comma-separated, no trailing slash), and `FRONTEND_URL`/`ADMIN_APP_URL` to match `VITE_FRONTEND_URL`/`VITE_ADMIN_APP_URL` above so invite/notification emails link to the right place. Redeploy the backend after changing env vars; redeploy each Vercel project after changing its build-time env vars (a plain "Redeploy" without clearing build cache is enough).
