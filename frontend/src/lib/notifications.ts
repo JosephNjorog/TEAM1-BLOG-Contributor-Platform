@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, type Notification } from "@team1/shared";
+import { apiRequest, useNotificationSocket, wsURL, type Notification, type WsMessage } from "@team1/shared";
 
 interface NotificationsResponse {
   notifications: Notification[];
@@ -7,12 +8,25 @@ interface NotificationsResponse {
 }
 
 export function useNotifications() {
-  // Polled for now; swapped for the live WebSocket push once the realtime
-  // notification hub lands later in the build.
+  const queryClient = useQueryClient();
+
+  const onMessage = useCallback(
+    (msg: WsMessage) => {
+      if (msg.type === "notification") {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      }
+    },
+    [queryClient],
+  );
+  useNotificationSocket(wsURL("/notifications/ws"), onMessage);
+
+  // Polling stays on as a fallback (e.g. a proxy that doesn't support WS
+  // upgrades) - the socket just makes updates feel instant instead of
+  // waiting up to this interval.
   return useQuery({
     queryKey: ["notifications"],
     queryFn: () => apiRequest<NotificationsResponse>("/notifications"),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
   });
 }
 
