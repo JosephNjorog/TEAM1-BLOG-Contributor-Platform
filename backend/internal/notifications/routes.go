@@ -10,6 +10,7 @@ func Routes(handler *Handler, issuer *auth.TokenIssuer) chi.Router {
 	r.Use(auth.RequireAuth(issuer))
 
 	r.Get("/", handler.List)
+	r.Get("/ws", handler.Socket)
 	r.Post("/{id}/read", handler.MarkRead)
 	r.Post("/read-all", handler.MarkAllRead)
 
