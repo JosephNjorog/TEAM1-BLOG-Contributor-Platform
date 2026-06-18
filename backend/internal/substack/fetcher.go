@@ -64,6 +64,22 @@ type rssFetcher struct {
 	publicationURL string
 }
 
+// pubDateLayouts covers both styles of RFC 822/1123 dates seen in the
+// wild: a named zone abbreviation like "GMT" (what Substack's own feed
+// actually emits) and a numeric offset like "+0000" (the more common RSS
+// convention elsewhere). time.RFC1123Z alone silently fails to parse the
+// former, leaving every post's date as the zero value.
+var pubDateLayouts = []string{time.RFC1123, time.RFC1123Z}
+
+func parsePubDate(raw string) time.Time {
+	for _, layout := range pubDateLayouts {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
 func (f *rssFetcher) FetchPosts(ctx context.Context) ([]Post, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.publicationURL+"/feed", nil)
 	if err != nil {
@@ -85,7 +101,7 @@ func (f *rssFetcher) FetchPosts(ctx context.Context) ([]Post, error) {
 
 	posts := make([]Post, 0, len(feed.Channel.Items))
 	for _, item := range feed.Channel.Items {
-		publishedAt, _ := time.Parse(time.RFC1123Z, item.PubDateRaw)
+		publishedAt := parsePubDate(item.PubDateRaw)
 		id := item.GUID
 		if id == "" {
 			id = item.Link
