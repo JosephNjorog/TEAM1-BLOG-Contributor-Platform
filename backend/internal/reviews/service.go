@@ -19,7 +19,7 @@ type Service struct {
 	repo          *Repository
 	articlesRepo  *articles.Repository
 	usersRepo     *users.Repository
-	notifications *notifications.Repository
+	notifications *notifications.Service
 	audit         *audit.Logger
 	mailer        email.Sender
 	appURL        string
@@ -29,7 +29,7 @@ func NewService(
 	repo *Repository,
 	articlesRepo *articles.Repository,
 	usersRepo *users.Repository,
-	notificationsRepo *notifications.Repository,
+	notificationsService *notifications.Service,
 	auditLogger *audit.Logger,
 	mailer email.Sender,
 	appURL string,
@@ -38,7 +38,7 @@ func NewService(
 		repo:          repo,
 		articlesRepo:  articlesRepo,
 		usersRepo:     usersRepo,
-		notifications: notificationsRepo,
+		notifications: notificationsService,
 		audit:         auditLogger,
 		mailer:        mailer,
 		appURL:        appURL,
@@ -102,7 +102,7 @@ func (s *Service) notifyOutcome(ctx context.Context, a *articles.Article, decisi
 	dashboardURL := fmt.Sprintf("%s/articles/%s", s.appURL, a.ID)
 
 	if decision == DecisionApproved {
-		_ = s.notifications.CreateForRole(ctx, string(users.RoleGraphicDesigner), notifications.TypeArticleApproved, &a.ID,
+		_, _ = s.notifications.CreateForRole(ctx, string(users.RoleGraphicDesigner), notifications.TypeArticleApproved, &a.ID,
 			fmt.Sprintf("%q is ready for a banner", a.Title))
 		_, _ = s.notifications.Create(ctx, a.ContributorID, notifications.TypeArticleApproved, &a.ID,
 			fmt.Sprintf("%q was approved by editorial", a.Title))
