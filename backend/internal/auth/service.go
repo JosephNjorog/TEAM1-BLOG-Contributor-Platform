@@ -36,19 +36,35 @@ type Service struct {
 	refreshTTL  time.Duration
 	appURL      string
 	adminAppURL string
+	// onRegistered fires after a successful registration. It's a plain
+	// callback rather than a direct dependency on internal/notifications,
+	// since that package's routes already import internal/auth (for its
+	// own RequireAuth middleware) - importing it back here would be a
+	// cycle. main.go wires this up to a real notification call.
+	onRegistered func(ctx context.Context, u *users.User)
 }
 
-func NewService(usersRepo *users.Repository, repo *Repository, issuer *TokenIssuer, auditLogger *audit.Logger, mailer email.Sender, inviteTTL, refreshTTL time.Duration, appURL, adminAppURL string) *Service {
+func NewService(
+	usersRepo *users.Repository,
+	repo *Repository,
+	issuer *TokenIssuer,
+	auditLogger *audit.Logger,
+	mailer email.Sender,
+	inviteTTL, refreshTTL time.Duration,
+	appURL, adminAppURL string,
+	onRegistered func(ctx context.Context, u *users.User),
+) *Service {
 	return &Service{
-		users:       usersRepo,
-		repo:        repo,
-		issuer:      issuer,
-		audit:       auditLogger,
-		mailer:      mailer,
-		inviteTTL:   inviteTTL,
-		refreshTTL:  refreshTTL,
-		appURL:      appURL,
-		adminAppURL: adminAppURL,
+		users:        usersRepo,
+		repo:         repo,
+		issuer:       issuer,
+		audit:        auditLogger,
+		mailer:       mailer,
+		inviteTTL:    inviteTTL,
+		refreshTTL:   refreshTTL,
+		appURL:       appURL,
+		adminAppURL:  adminAppURL,
+		onRegistered: onRegistered,
 	}
 }
 
@@ -171,6 +187,9 @@ func (s *Service) RegisterFromInvite(ctx context.Context, in RegisterInput) (*us
 	}
 
 	_ = s.audit.Log(ctx, &u.ID, "user_registered", "user", &u.ID, map[string]any{"role": u.Role})
+	if s.onRegistered != nil {
+		s.onRegistered(ctx, u)
+	}
 
 	return u, tokens, nil
 }
