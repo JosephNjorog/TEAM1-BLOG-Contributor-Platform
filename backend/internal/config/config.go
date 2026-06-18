@@ -18,6 +18,8 @@ type Config struct {
 	RefreshTokenTTL time.Duration
 	InviteTTL       time.Duration
 	CORSOrigins     []string
+	FrontendURL     string
+	AdminAppURL     string
 
 	// Resend
 	ResendAPIKey   string
@@ -55,6 +57,8 @@ func Load() *Config {
 		RefreshTokenTTL: durationEnv("REFRESH_TOKEN_TTL", 7*24*time.Hour),
 		InviteTTL:       durationEnv("INVITE_TTL", 72*time.Hour),
 		CORSOrigins:     splitCSV(getEnv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174")),
+		FrontendURL:     getEnv("FRONTEND_URL", "http://localhost:5173"),
+		AdminAppURL:     getEnv("ADMIN_APP_URL", "http://localhost:5174"),
 
 		ResendAPIKey:   os.Getenv("RESEND_API_KEY"),
 		ResendFromAddr: getEnv("RESEND_FROM_ADDR", "noreply@team1.blog"),
