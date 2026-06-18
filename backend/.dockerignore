@@ -1,0 +1,6 @@
+.env
+.env.local
+.devmail/
+uploads/
+tmp/
+*.log
