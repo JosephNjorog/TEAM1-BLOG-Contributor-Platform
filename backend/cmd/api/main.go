@@ -28,6 +28,7 @@ import (
 	"team1blog/backend/internal/substack"
 	"team1blog/backend/internal/uploads"
 	"team1blog/backend/internal/users"
+	"team1blog/backend/internal/webhooks"
 )
 
 func main() {
@@ -104,6 +105,8 @@ func main() {
 	substackService := substack.NewService(substackRepo, usersRepo, substackFetcher)
 	substackHandler := substack.NewHandler(substackService)
 
+	webhooksHandler := webhooks.NewHandler(notificationsService, cfg.ResendWebhookSecret)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
@@ -141,6 +144,7 @@ func main() {
 		api.Mount("/payments", payments.Routes(paymentsHandler, tokenIssuer))
 		api.Mount("/admin", admin.Routes(adminHandler, tokenIssuer))
 		api.Mount("/sync/substack", substack.Routes(substackHandler, tokenIssuer))
+		api.Mount("/webhooks", webhooks.Routes(webhooksHandler))
 	})
 
 	startSubstackScheduler(ctx, substackService)
