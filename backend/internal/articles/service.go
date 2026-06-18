@@ -17,17 +17,17 @@ var ErrNotEditable = errors.New("article cannot be edited in its current status"
 type Service struct {
 	repo          *Repository
 	usersRepo     *users.Repository
-	notifications *notifications.Repository
+	notifications *notifications.Service
 	audit         *audit.Logger
 	mailer        email.Sender
 	appURL        string
 }
 
-func NewService(repo *Repository, usersRepo *users.Repository, notificationsRepo *notifications.Repository, auditLogger *audit.Logger, mailer email.Sender, appURL string) *Service {
+func NewService(repo *Repository, usersRepo *users.Repository, notificationsService *notifications.Service, auditLogger *audit.Logger, mailer email.Sender, appURL string) *Service {
 	return &Service{
 		repo:          repo,
 		usersRepo:     usersRepo,
-		notifications: notificationsRepo,
+		notifications: notificationsService,
 		audit:         auditLogger,
 		mailer:        mailer,
 		appURL:        appURL,
@@ -123,7 +123,7 @@ func (s *Service) Submit(ctx context.Context, articleID, contributorID uuid.UUID
 		notifType = notifications.TypeArticleResubmitted
 		moderatorMsg = fmt.Sprintf("%q was resubmitted after changes by %s", a.Title, a.ContributorName)
 	}
-	_ = s.notifications.CreateForRole(ctx, string(users.RoleModerator), notifType, &articleID, moderatorMsg)
+	_, _ = s.notifications.CreateForRole(ctx, string(users.RoleModerator), notifType, &articleID, moderatorMsg)
 
 	if moderators, err := s.usersRepo.ListByRole(ctx, users.RoleModerator); err == nil {
 		subject, html := email.SubmissionAcknowledgedEmail(a.Title, dashboardURL)
@@ -181,7 +181,7 @@ func (s *Service) Publish(ctx context.Context, articleID, publisherID uuid.UUID,
 		}
 	}
 
-	_ = s.notifications.CreateForRole(ctx, string(users.RoleSuperAdmin), notifications.TypeArticlePublished, &articleID,
+	_, _ = s.notifications.CreateForRole(ctx, string(users.RoleSuperAdmin), notifications.TypeArticlePublished, &articleID,
 		fmt.Sprintf("%q was published - payment release needed", a.Title))
 
 	_ = s.audit.Log(ctx, &publisherID, "article_published", "article", &articleID, map[string]any{"substackUrl": substackURL})
