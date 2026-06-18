@@ -49,7 +49,7 @@ func main() {
 	usersRepo := users.NewRepository(pool)
 	authRepo := auth.NewRepository(pool)
 	tokenIssuer := auth.NewTokenIssuer(cfg.JWTSecret, cfg.AccessTokenTTL)
-	authService := auth.NewService(usersRepo, authRepo, tokenIssuer, auditLogger, mailer, cfg.InviteTTL, cfg.RefreshTokenTTL, frontendAppURL(cfg))
+	authService := auth.NewService(usersRepo, authRepo, tokenIssuer, auditLogger, mailer, cfg.InviteTTL, cfg.RefreshTokenTTL, cfg.FrontendURL, cfg.AdminAppURL)
 	authHandler := auth.NewHandler(authService)
 
 	profileHandler := profile.NewHandler(usersRepo)
@@ -58,17 +58,17 @@ func main() {
 	notificationsHandler := notifications.NewHandler(notificationsRepo)
 
 	articlesRepo := articles.NewRepository(pool)
-	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, frontendAppURL(cfg))
+	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, cfg.FrontendURL)
 	articlesHandler := articles.NewHandler(articlesService)
 
 	uploader := cloudinary.NewUploader(cfg.CloudinaryCloudName, cfg.CloudinaryAPIKey, cfg.CloudinaryAPISecret, cfg.PublicAPIURL, cfg.MockImages, "uploads")
 
 	reviewsRepo := reviews.NewRepository(pool)
-	reviewsService := reviews.NewService(reviewsRepo, articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, frontendAppURL(cfg))
+	reviewsService := reviews.NewService(reviewsRepo, articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, cfg.FrontendURL)
 	reviewsHandler := reviews.NewHandler(reviewsService, articlesService)
 
 	bannersRepo := banners.NewRepository(pool)
-	bannersService := banners.NewService(bannersRepo, articlesRepo, usersRepo, notificationsRepo, uploader, auditLogger, mailer, frontendAppURL(cfg))
+	bannersService := banners.NewService(bannersRepo, articlesRepo, usersRepo, notificationsRepo, uploader, auditLogger, mailer, cfg.FrontendURL)
 	bannersHandler := banners.NewHandler(bannersService, articlesService)
 
 	uploadsHandler := uploads.NewHandler(articlesRepo, uploader)
@@ -78,7 +78,7 @@ func main() {
 		log.Fatalf("avalanche sender setup failed: %v", err)
 	}
 	paymentsRepo := payments.NewRepository(pool)
-	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsRepo, avalancheSender, auditLogger, mailer, frontendAppURL(cfg), cfg.MockPayments)
+	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsRepo, avalancheSender, auditLogger, mailer, cfg.FrontendURL, cfg.MockPayments)
 	paymentsHandler := payments.NewHandler(paymentsService)
 
 	adminRepo := admin.NewRepository(pool)
@@ -168,13 +168,6 @@ func runSubstackSync(ctx context.Context, service *substack.Service) {
 		return
 	}
 	log.Printf("substack sync complete: %d posts", count)
-}
-
-func frontendAppURL(cfg *config.Config) string {
-	if len(cfg.CORSOrigins) > 0 {
-		return cfg.CORSOrigins[0]
-	}
-	return "http://localhost:5173"
 }
 
 func logIntegrationModes(cfg *config.Config) {
