@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -49,8 +50,6 @@ func main() {
 	usersRepo := users.NewRepository(pool)
 	authRepo := auth.NewRepository(pool)
 	tokenIssuer := auth.NewTokenIssuer(cfg.JWTSecret, cfg.AccessTokenTTL)
-	authService := auth.NewService(usersRepo, authRepo, tokenIssuer, auditLogger, mailer, cfg.InviteTTL, cfg.RefreshTokenTTL, cfg.FrontendURL, cfg.AdminAppURL)
-	authHandler := auth.NewHandler(authService)
 
 	profileHandler := profile.NewHandler(usersRepo)
 
@@ -58,6 +57,19 @@ func main() {
 	notificationsHub := notifications.NewHub()
 	notificationsService := notifications.NewService(notificationsRepo, notificationsHub)
 	notificationsHandler := notifications.NewHandler(notificationsService, notificationsHub)
+
+	// Super Admin gets a separate internal notification whenever someone
+	// new joins the platform, per the PRD - wired as a callback rather
+	// than a direct dependency, since internal/notifications' own routes
+	// already import internal/auth for RequireAuth, and importing it back
+	// here would be a cycle.
+	authService := auth.NewService(usersRepo, authRepo, tokenIssuer, auditLogger, mailer, cfg.InviteTTL, cfg.RefreshTokenTTL, cfg.FrontendURL, cfg.AdminAppURL,
+		func(ctx context.Context, u *users.User) {
+			_, _ = notificationsService.CreateForRole(ctx, string(users.RoleSuperAdmin), notifications.TypeUserRegistered, nil,
+				fmt.Sprintf("%s registered as %s", u.Name, u.Role))
+		},
+	)
+	authHandler := auth.NewHandler(authService)
 
 	articlesRepo := articles.NewRepository(pool)
 	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsService, auditLogger, mailer, cfg.FrontendURL)
@@ -80,7 +92,7 @@ func main() {
 		log.Fatalf("avalanche sender setup failed: %v", err)
 	}
 	paymentsRepo := payments.NewRepository(pool)
-	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsService, avalancheSender, auditLogger, mailer, cfg.FrontendURL, cfg.MockPayments)
+	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsService, avalancheSender, auditLogger, mailer, cfg.FrontendURL, cfg.AdminAppURL, cfg.MockPayments)
 	paymentsHandler := payments.NewHandler(paymentsService)
 
 	adminRepo := admin.NewRepository(pool)
