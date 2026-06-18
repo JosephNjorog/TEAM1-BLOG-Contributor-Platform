@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Button, Spinner, StatusPill, type Article, type ArticleStatus } from "@team1/shared";
 import { useArticles } from "../lib/articles";
 import { useOverrideArticleStatus } from "../lib/admin";
+import { useArticleFeedback } from "../lib/reviews";
+import { useLatestBanner } from "../lib/banners";
+import { FeedbackPanel } from "../components/FeedbackPanel";
 
 const COLUMNS: { status: ArticleStatus; label: string }[] = [
   { status: "draft", label: "Draft" },
@@ -71,6 +74,8 @@ function OverridePanel({ article, onClose }: { article: Article; onClose: () => 
   const [status, setStatus] = useState<ArticleStatus>(article.status);
   const [reason, setReason] = useState("");
   const override = useOverrideArticleStatus();
+  const { data: feedback } = useArticleFeedback(article.id);
+  const { data: banner } = useLatestBanner(article.id);
 
   const onSubmit = async () => {
     if (!reason.trim()) return;
@@ -99,6 +104,24 @@ function OverridePanel({ article, onClose }: { article: Article; onClose: () => 
         <div className="article-editor mb-6 max-h-60 overflow-y-auto rounded-xl2 border border-surface-border bg-surface-base px-4 py-3 text-sm text-zinc-300">
           <div dangerouslySetInnerHTML={{ __html: article.content || "<p><em>No content.</em></p>" }} />
         </div>
+
+        {banner && (
+          <div className="mb-6">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Banner</p>
+            <img src={banner.cloudinaryUrl} alt="" className="w-full rounded-xl2 object-cover" />
+            <p className="mt-1 text-xs text-zinc-500">
+              uploaded by {banner.designerName}
+              {banner.markedReadyAt ? " · marked ready" : " · not yet marked ready"}
+            </p>
+          </div>
+        )}
+
+        {feedback && (feedback.reviewCycles.length > 0 || feedback.suggestions.length > 0) && (
+          <div className="mb-6">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Review history</p>
+            <FeedbackPanel reviewCycles={feedback.reviewCycles} suggestions={feedback.suggestions} />
+          </div>
+        )}
 
         <div className="rounded-xl2 border border-amber-900/60 bg-amber-950/20 p-4">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-amber-400">Manual override</p>
