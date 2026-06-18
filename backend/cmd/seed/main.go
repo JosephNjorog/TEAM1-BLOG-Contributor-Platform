@@ -43,6 +43,8 @@ func main() {
 		{"Diego Designer", "designer@team1.blog", "password123", users.RoleGraphicDesigner, ""},
 		{"Pat Publisher", "publisher@team1.blog", "password123", users.RolePublisher, ""},
 		{"Chidi Contributor", "contributor@team1.blog", "password123", users.RoleContributor, "0x1234567890123456789012345678901234567890"},
+		{"Amara Adeyemi", "amara@team1.blog", "password123", users.RoleContributor, "0x2222222222222222222222222222222222222222"},
+		{"Tunde Bakare", "tunde@team1.blog", "password123", users.RoleContributor, "0x3333333333333333333333333333333333333333"},
 	}
 
 	for _, su := range seedUsers {
