@@ -22,9 +22,10 @@ type Config struct {
 	AdminAppURL     string
 
 	// Resend
-	ResendAPIKey   string
-	ResendFromAddr string
-	MockEmail      bool
+	ResendAPIKey        string
+	ResendFromAddr      string
+	ResendWebhookSecret string
+	MockEmail           bool
 
 	// Cloudinary
 	CloudinaryCloudName string
@@ -60,8 +61,9 @@ func Load() *Config {
 		FrontendURL:     getEnv("FRONTEND_URL", "http://localhost:5173"),
 		AdminAppURL:     getEnv("ADMIN_APP_URL", "http://localhost:5174"),
 
-		ResendAPIKey:   os.Getenv("RESEND_API_KEY"),
-		ResendFromAddr: getEnv("RESEND_FROM_ADDR", "noreply@team1.blog"),
+		ResendAPIKey:        os.Getenv("RESEND_API_KEY"),
+		ResendFromAddr:      getEnv("RESEND_FROM_ADDR", "noreply@team1.blog"),
+		ResendWebhookSecret: os.Getenv("RESEND_WEBHOOK_SECRET"),
 
 		CloudinaryCloudName: os.Getenv("CLOUDINARY_CLOUD_NAME"),
 		CloudinaryAPIKey:    os.Getenv("CLOUDINARY_API_KEY"),
