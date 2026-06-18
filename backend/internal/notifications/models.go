@@ -18,6 +18,9 @@ const (
 	TypeArticlePublished   Type = "article_published"
 	TypePaymentInitiated   Type = "payment_initiated"
 	TypePaymentConfirmed   Type = "payment_confirmed"
+	TypePaymentFailed      Type = "payment_failed"
+	TypeUserRegistered     Type = "user_registered"
+	TypeEmailBounced       Type = "email_bounced"
 )
 
 type Notification struct {
