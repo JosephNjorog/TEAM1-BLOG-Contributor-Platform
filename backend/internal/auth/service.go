@@ -27,27 +27,40 @@ func IsValidAvalancheAddress(addr string) bool {
 }
 
 type Service struct {
-	users      *users.Repository
-	repo       *Repository
-	issuer     *TokenIssuer
-	audit      *audit.Logger
-	mailer     email.Sender
-	inviteTTL  time.Duration
-	refreshTTL time.Duration
-	appURL     string
+	users       *users.Repository
+	repo        *Repository
+	issuer      *TokenIssuer
+	audit       *audit.Logger
+	mailer      email.Sender
+	inviteTTL   time.Duration
+	refreshTTL  time.Duration
+	appURL      string
+	adminAppURL string
 }
 
-func NewService(usersRepo *users.Repository, repo *Repository, issuer *TokenIssuer, auditLogger *audit.Logger, mailer email.Sender, inviteTTL, refreshTTL time.Duration, appURL string) *Service {
+func NewService(usersRepo *users.Repository, repo *Repository, issuer *TokenIssuer, auditLogger *audit.Logger, mailer email.Sender, inviteTTL, refreshTTL time.Duration, appURL, adminAppURL string) *Service {
 	return &Service{
-		users:      usersRepo,
-		repo:       repo,
-		issuer:     issuer,
-		audit:      auditLogger,
-		mailer:     mailer,
-		inviteTTL:  inviteTTL,
-		refreshTTL: refreshTTL,
-		appURL:     appURL,
+		users:       usersRepo,
+		repo:        repo,
+		issuer:      issuer,
+		audit:       auditLogger,
+		mailer:      mailer,
+		inviteTTL:   inviteTTL,
+		refreshTTL:  refreshTTL,
+		appURL:      appURL,
+		adminAppURL: adminAppURL,
 	}
+}
+
+// registerURLFor picks which app's /register page an invitation should
+// point to: Super Admins use the dedicated admin app (a separate
+// deployment from the contributor/moderator/designer/publisher frontend),
+// everyone else uses the main frontend.
+func (s *Service) registerURLFor(role users.Role) string {
+	if role == users.RoleSuperAdmin {
+		return s.adminAppURL
+	}
+	return s.appURL
 }
 
 type TokenPair struct {
@@ -84,7 +97,7 @@ func (s *Service) Invite(ctx context.Context, actorID uuid.UUID, emailAddr strin
 		return err
 	}
 
-	registerURL := fmt.Sprintf("%s/register?token=%s", s.appURL, rawToken)
+	registerURL := fmt.Sprintf("%s/register?token=%s", s.registerURLFor(role), rawToken)
 	subject, html := email.InvitationEmail(string(role), registerURL)
 	if err := s.mailer.Send(ctx, emailAddr, subject, html); err != nil {
 		return fmt.Errorf("send invitation email: %w", err)
