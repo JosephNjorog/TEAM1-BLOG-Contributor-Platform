@@ -33,6 +33,7 @@ type Service struct {
 	audit         *audit.Logger
 	mailer        email.Sender
 	appURL        string
+	adminAppURL   string
 	mock          bool
 }
 
@@ -44,7 +45,7 @@ func NewService(
 	sender avalanche.Sender,
 	auditLogger *audit.Logger,
 	mailer email.Sender,
-	appURL string,
+	appURL, adminAppURL string,
 	mock bool,
 ) *Service {
 	return &Service{
@@ -56,6 +57,7 @@ func NewService(
 		audit:         auditLogger,
 		mailer:        mailer,
 		appURL:        appURL,
+		adminAppURL:   adminAppURL,
 		mock:          mock,
 	}
 }
@@ -132,6 +134,7 @@ func (s *Service) awaitConfirmation(paymentID, articleID uuid.UUID, txHash strin
 	if err != nil || !confirmed {
 		log.Printf("payment %s (article %s, tx %s) did not confirm: %v", paymentID, articleID, txHash, err)
 		_ = s.repo.MarkFailed(ctx, paymentID)
+		s.notifyPaymentFailed(ctx, articleID, txHash)
 		return
 	}
 
@@ -155,6 +158,27 @@ func (s *Service) awaitConfirmation(paymentID, articleID uuid.UUID, txHash strin
 	if contributor, err := s.usersRepo.GetByID(ctx, a.ContributorID); err == nil {
 		subject, html := email.PaymentConfirmedEmail(a.Title, amountStr, txHash, dashboardURL)
 		_ = s.mailer.Send(ctx, contributor.Email, subject, html)
+	}
+}
+
+// notifyPaymentFailed alerts every Super Admin when an onchain transfer
+// doesn't confirm - this needs a human to look at the chain directly and
+// decide whether to retry, since the platform has no automatic recovery
+// for a stuck or dropped transaction.
+func (s *Service) notifyPaymentFailed(ctx context.Context, articleID uuid.UUID, txHash string) {
+	a, err := s.articlesRepo.GetByID(ctx, articleID)
+	if err != nil {
+		return
+	}
+	_, _ = s.notifications.CreateForRole(ctx, string(users.RoleSuperAdmin), notifications.TypePaymentFailed, &articleID,
+		fmt.Sprintf("Payment for %q failed to confirm onchain", a.Title))
+
+	if admins, err := s.usersRepo.ListByRole(ctx, users.RoleSuperAdmin); err == nil {
+		dashboardURL := fmt.Sprintf("%s/app/payments", s.adminAppURL)
+		subject, html := email.PaymentFailedEmail(a.Title, a.ContributorName, txHash, dashboardURL)
+		for _, admin := range admins {
+			_ = s.mailer.Send(ctx, admin.Email, subject, html)
+		}
 	}
 }
 
