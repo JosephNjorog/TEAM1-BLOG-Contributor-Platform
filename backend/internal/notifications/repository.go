@@ -27,13 +27,28 @@ func (r *Repository) Create(ctx context.Context, userID uuid.UUID, t Type, artic
 
 // CreateForRole fans a notification out to every active user with the given
 // role - used for moderator/designer/publisher queue events where there's
-// no single assigned recipient yet.
-func (r *Repository) CreateForRole(ctx context.Context, role string, t Type, articleID *uuid.UUID, message string) error {
-	_, err := r.pool.Exec(ctx, `
+// no single assigned recipient yet. Returns the created rows so the
+// service layer can push each one to its recipient over WebSocket.
+func (r *Repository) CreateForRole(ctx context.Context, role string, t Type, articleID *uuid.UUID, message string) ([]*Notification, error) {
+	rows, err := r.pool.Query(ctx, `
 		INSERT INTO notifications (user_id, type, article_id, message)
 		SELECT id, $1, $2, $3 FROM users WHERE role = $4 AND status = 'active'
+		RETURNING id, user_id, type, article_id, message, read, created_at
 	`, t, articleID, message, role)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*Notification
+	for rows.Next() {
+		n, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
 }
 
 func (r *Repository) ListForUser(ctx context.Context, userID uuid.UUID, limit int) ([]*Notification, error) {
