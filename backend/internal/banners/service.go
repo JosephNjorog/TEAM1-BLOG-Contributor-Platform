@@ -23,7 +23,7 @@ type Service struct {
 	repo          *Repository
 	articlesRepo  *articles.Repository
 	usersRepo     *users.Repository
-	notifications *notifications.Repository
+	notifications *notifications.Service
 	uploader      cloudinary.Uploader
 	audit         *audit.Logger
 	mailer        email.Sender
@@ -34,7 +34,7 @@ func NewService(
 	repo *Repository,
 	articlesRepo *articles.Repository,
 	usersRepo *users.Repository,
-	notificationsRepo *notifications.Repository,
+	notificationsService *notifications.Service,
 	uploader cloudinary.Uploader,
 	auditLogger *audit.Logger,
 	mailer email.Sender,
@@ -44,7 +44,7 @@ func NewService(
 		repo:          repo,
 		articlesRepo:  articlesRepo,
 		usersRepo:     usersRepo,
-		notifications: notificationsRepo,
+		notifications: notificationsService,
 		uploader:      uploader,
 		audit:         auditLogger,
 		mailer:        mailer,
@@ -111,7 +111,7 @@ func (s *Service) MarkReady(ctx context.Context, articleID, designerID uuid.UUID
 	}
 
 	dashboardURL := fmt.Sprintf("%s/articles/%s", s.appURL, articleID)
-	_ = s.notifications.CreateForRole(ctx, string(users.RolePublisher), notifications.TypeBannerReady, &articleID,
+	_, _ = s.notifications.CreateForRole(ctx, string(users.RolePublisher), notifications.TypeBannerReady, &articleID,
 		fmt.Sprintf("%q has a banner ready to publish", a.Title))
 	if publishers, err := s.usersRepo.ListByRole(ctx, users.RolePublisher); err == nil {
 		subject, html := email.BannerReadyEmail(a.Title, dashboardURL)
