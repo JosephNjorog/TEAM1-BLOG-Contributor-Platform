@@ -38,12 +38,18 @@ export function configureApiClient(opts: { baseUrl: string }): void {
   baseUrl = opts.baseUrl;
 }
 
-// Builds an absolute ws(s):// URL against the current page's origin, using
-// the same baseUrl apiRequest uses for plain HTTP - in dev that's proxied
-// to the backend by Vite (vite.config.ts sets ws: true on the /api proxy);
-// in production whatever serves the frontend needs to proxy WS upgrades
-// under this same path too.
+// Builds an absolute ws(s):// URL for the notification socket, from the
+// same baseUrl apiRequest uses for plain HTTP. If baseUrl is relative (the
+// default - works when this app and the API share an origin, e.g. via a
+// reverse proxy), the socket is built against the current page's origin.
+// If baseUrl is itself absolute (VITE_API_BASE_URL set, for deployments
+// where the API is on a separate host), the socket is built against that
+// host instead - using window.location.host here would point at the
+// wrong server entirely.
 export function wsURL(path: string): string {
+  if (/^https?:\/\//.test(baseUrl)) {
+    return baseUrl.replace(/^http/, "ws") + path;
+  }
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}${baseUrl}${path}`;
 }
