@@ -55,20 +55,22 @@ func main() {
 	profileHandler := profile.NewHandler(usersRepo)
 
 	notificationsRepo := notifications.NewRepository(pool)
-	notificationsHandler := notifications.NewHandler(notificationsRepo)
+	notificationsHub := notifications.NewHub()
+	notificationsService := notifications.NewService(notificationsRepo, notificationsHub)
+	notificationsHandler := notifications.NewHandler(notificationsService, notificationsHub)
 
 	articlesRepo := articles.NewRepository(pool)
-	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, cfg.FrontendURL)
+	articlesService := articles.NewService(articlesRepo, usersRepo, notificationsService, auditLogger, mailer, cfg.FrontendURL)
 	articlesHandler := articles.NewHandler(articlesService)
 
 	uploader := cloudinary.NewUploader(cfg.CloudinaryCloudName, cfg.CloudinaryAPIKey, cfg.CloudinaryAPISecret, cfg.PublicAPIURL, cfg.MockImages, "uploads")
 
 	reviewsRepo := reviews.NewRepository(pool)
-	reviewsService := reviews.NewService(reviewsRepo, articlesRepo, usersRepo, notificationsRepo, auditLogger, mailer, cfg.FrontendURL)
+	reviewsService := reviews.NewService(reviewsRepo, articlesRepo, usersRepo, notificationsService, auditLogger, mailer, cfg.FrontendURL)
 	reviewsHandler := reviews.NewHandler(reviewsService, articlesService)
 
 	bannersRepo := banners.NewRepository(pool)
-	bannersService := banners.NewService(bannersRepo, articlesRepo, usersRepo, notificationsRepo, uploader, auditLogger, mailer, cfg.FrontendURL)
+	bannersService := banners.NewService(bannersRepo, articlesRepo, usersRepo, notificationsService, uploader, auditLogger, mailer, cfg.FrontendURL)
 	bannersHandler := banners.NewHandler(bannersService, articlesService)
 
 	uploadsHandler := uploads.NewHandler(articlesRepo, uploader)
@@ -78,7 +80,7 @@ func main() {
 		log.Fatalf("avalanche sender setup failed: %v", err)
 	}
 	paymentsRepo := payments.NewRepository(pool)
-	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsRepo, avalancheSender, auditLogger, mailer, cfg.FrontendURL, cfg.MockPayments)
+	paymentsService := payments.NewService(paymentsRepo, articlesRepo, usersRepo, notificationsService, avalancheSender, auditLogger, mailer, cfg.FrontendURL, cfg.MockPayments)
 	paymentsHandler := payments.NewHandler(paymentsService)
 
 	adminRepo := admin.NewRepository(pool)
