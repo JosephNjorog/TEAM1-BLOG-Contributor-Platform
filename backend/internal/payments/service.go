@@ -28,7 +28,7 @@ type Service struct {
 	repo          *Repository
 	articlesRepo  *articles.Repository
 	usersRepo     *users.Repository
-	notifications *notifications.Repository
+	notifications *notifications.Service
 	sender        avalanche.Sender
 	audit         *audit.Logger
 	mailer        email.Sender
@@ -40,7 +40,7 @@ func NewService(
 	repo *Repository,
 	articlesRepo *articles.Repository,
 	usersRepo *users.Repository,
-	notificationsRepo *notifications.Repository,
+	notificationsService *notifications.Service,
 	sender avalanche.Sender,
 	auditLogger *audit.Logger,
 	mailer email.Sender,
@@ -51,7 +51,7 @@ func NewService(
 		repo:          repo,
 		articlesRepo:  articlesRepo,
 		usersRepo:     usersRepo,
-		notifications: notificationsRepo,
+		notifications: notificationsService,
 		sender:        sender,
 		audit:         auditLogger,
 		mailer:        mailer,
