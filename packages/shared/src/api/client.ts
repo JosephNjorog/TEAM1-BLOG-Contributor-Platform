@@ -38,6 +38,16 @@ export function configureApiClient(opts: { baseUrl: string }): void {
   baseUrl = opts.baseUrl;
 }
 
+// Builds an absolute ws(s):// URL against the current page's origin, using
+// the same baseUrl apiRequest uses for plain HTTP - in dev that's proxied
+// to the backend by Vite (vite.config.ts sets ws: true on the /api proxy);
+// in production whatever serves the frontend needs to proxy WS upgrades
+// under this same path too.
+export function wsURL(path: string): string {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}${baseUrl}${path}`;
+}
+
 async function tryRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
