@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: team1blog-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: ENV
+        value: production
+      - key: PUBLIC_API_URL
+        sync: false # https://<this-service>.onrender.com
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string, sslmode=require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ACCESS_TOKEN_TTL
+        value: 24h
+      - key: REFRESH_TOKEN_TTL
+        value: 168h
+      - key: INVITE_TTL
+        value: 72h
+      - key: CORS_ORIGINS
+        sync: false # comma-separated, e.g. https://app.vercel.app,https://admin.vercel.app
+      - key: FRONTEND_URL
+        sync: false # contributor app's deployed URL (used in invite/notification emails)
+      - key: ADMIN_APP_URL
+        sync: false # super-admin app's deployed URL
+      - key: RESEND_API_KEY
+        sync: false # leave unset to write emails to backend/.devmail instead of sending
+      - key: RESEND_FROM_ADDR
+        sync: false
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false # signing secret for the Resend bounce webhook, whsec_...
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # leave all three Cloudinary vars unset to use the local-disk fallback
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: AVALANCHE_RPC_URL
+        value: https://api.avax-test.network/ext/bc/C/rpc
+      - key: AVALANCHE_TREASURY_PRIVATE_KEY
+        sync: false # leave unset to simulate payments instead of sending real onchain transactions
+      - key: AVALANCHE_USDC_CONTRACT_ADDRESS
+        sync: false
+      - key: SUBSTACK_PUBLICATION_URL
+        value: https://blogdeteam1.substack.com
