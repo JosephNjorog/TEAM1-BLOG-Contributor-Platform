@@ -78,3 +78,15 @@ func PaymentConfirmedEmail(title, amount, txHash, dashboardURL string) (subject,
 	body := fmt.Sprintf(`Your payment of <strong>$%s</strong> for <strong>%s</strong> has been confirmed onchain.<br><br>Tx hash: <code>%s</code>`, amount, title, txHash)
 	return subject, layout(subject, body, dashboardURL, "View Payment")
 }
+
+// PaymentFailedEmail goes to Super Admins, not the contributor - it means
+// the onchain transfer didn't confirm and needs manual attention before
+// retrying.
+func PaymentFailedEmail(title, contributorName, txHash, dashboardURL string) (subject, html string) {
+	subject = fmt.Sprintf("Payment failed to confirm: %s", title)
+	body := fmt.Sprintf(
+		`The payment for <strong>%s</strong> (contributor: %s) did not confirm onchain and needs review.<br><br>Tx hash: <code>%s</code>`,
+		title, contributorName, txHash,
+	)
+	return subject, layout(subject, body, dashboardURL, "Review Payment")
+}
